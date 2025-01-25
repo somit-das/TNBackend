@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface NoteRepository extends JpaRepository<Note, Long> {
 
-    List<Note> findNoteByUsername(String username);
+	    List<Note> findByOwnerUsername(String ownerUsername);
 
-    Optional<Note> findNoteByIdAndUsername(Long id, String username);
+//    Optional<Note> findNoteByIdAndOwnerUsername(Long id, String username);
 }

@@ -16,22 +16,21 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "roles")
-public class Role {
+public class Role{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "role_id")
-    private Long roleId;
+    private Integer roleId;
 
     @ToString.Exclude
     @Enumerated(EnumType.STRING)
-    @Column(name = "role_name")
+    @Column(length = 20, name = "role_name")
     private AppRole roleName;
 
-    @OneToMany(mappedBy = "role",fetch = FetchType.LAZY,cascade = {CascadeType.MERGE})
+    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE})
     @JsonBackReference
     @ToString.Exclude
     private Set<User> users = new HashSet<>();
-
 
     public Role(AppRole roleName) {
         this.roleName = roleName;

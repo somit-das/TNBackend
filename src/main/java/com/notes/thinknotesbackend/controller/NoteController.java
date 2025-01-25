@@ -17,18 +17,18 @@ public class NoteController {
     private NoteService noteService;
 
     @PostMapping
-    public Note createNote(@RequestBody String content, //update content to note
+    public Note createNote(@RequestBody String content,
                            @AuthenticationPrincipal UserDetails userDetails) {
         String username = userDetails.getUsername();
-//        System.out.println("USER DETAILS: " + username);
+        System.out.println("USER DETAILS: " + username);
         return noteService.createNoteForUser(username, content);
     }
 
     @GetMapping
     public List<Note> getUserNotes(@AuthenticationPrincipal UserDetails userDetails) {
         String username = userDetails.getUsername();
-//        System.out.println("USER DETAILS: " + username);
-        return noteService.getAllNotesForUser(username);
+        System.out.println("USER DETAILS: " + username);
+        return noteService.getNotesForUser(username);
     }
 
     @PutMapping("/{noteId}")
@@ -36,7 +36,7 @@ public class NoteController {
                            @RequestBody String content,
                            @AuthenticationPrincipal UserDetails userDetails) {
         String username = userDetails.getUsername();
-        return noteService.updateNoteForUser(noteId,  username,content);
+        return noteService.updateNoteForUser(noteId, content, username);
     }
 
     @DeleteMapping("/{noteId}")

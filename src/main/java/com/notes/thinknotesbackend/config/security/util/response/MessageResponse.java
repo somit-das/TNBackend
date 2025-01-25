@@ -6,12 +6,12 @@ import lombok.Setter;
 
 @Setter
 @Getter
-public class SignUpResponse {
-    private Integer status;
+public class MessageResponse { // changed from SignupResponse as it can be reusable
+ 
     private String message;
 
-    public SignUpResponse(Integer status, String message) {
-        this.status = status;
+    public MessageResponse(String message) {
+   
         this.message = message;
     }
 }

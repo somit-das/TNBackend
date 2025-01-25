@@ -1,6 +1,7 @@
 package com.notes.thinknotesbackend.config.security;
 
 import com.notes.thinknotesbackend.config.filter.CustomLoggingFilter;
+import com.notes.thinknotesbackend.config.filter.RequestValidationFilter;
 import com.notes.thinknotesbackend.config.filter.UserAgentFilter;
 import com.notes.thinknotesbackend.config.security.exceptionhandler.JwtAuthEntryPoint;
 import com.notes.thinknotesbackend.config.security.securityfilter.JwtAuthTokenFilter;
@@ -25,6 +26,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
@@ -83,7 +85,10 @@ public class SecurityConfig {
         // unlike before no "new JwtAuthTokenFiler()" is used as i want to make this component reusable
         // it could be autowired like JwtAuthTokenFilter yes but @Bean Allows full customization of bean creation where as @Autowired allow No control over how the bean is created.
 
-        http.sessionManagement((session) -> {session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);});
+//        http.addFilterBefore(new CustomLoggingFilter(),UsernamePasswordAuthenticationFilter.class);
+//        http.addFilterBefore(new UserAgentFilter(),CustomLoggingFilter.class);
+//        http.addFilterAfter(new RequestValidationFilter(), AuthorizationFilter.class);
+//        http.sessionManagement((session) -> {session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);}); // changing the sessionpolicy from stateful to complete stateless . i have commented this as the frontend program is not requesting csrf token each time and the frontend application is remembering the csrf token
 
         return http.build();
     }
