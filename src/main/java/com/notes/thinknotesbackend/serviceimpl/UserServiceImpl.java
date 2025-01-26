@@ -7,7 +7,6 @@ import com.notes.thinknotesbackend.repository.RoleRepository;
 import com.notes.thinknotesbackend.repository.UserRepository;
 import com.notes.thinknotesbackend.service.UserService;
 import com.notes.thinknotesbackend.util.AppRole;
-import com.notes.thinknotesbackend.util.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,9 +21,9 @@ public class UserServiceImpl implements UserService {
 
    
 
-
-     @Value("${frontend.url}")
-    String frontendUrl;
+//
+//     @Value("${frontend.url}")
+//    String frontendUrl;
 
 
     @Autowired
