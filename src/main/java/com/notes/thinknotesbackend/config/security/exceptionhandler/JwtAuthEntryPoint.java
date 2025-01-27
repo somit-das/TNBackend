@@ -21,7 +21,7 @@ public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthEntryPoint.class);
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
-        logger.error("Unauthorized error: {}", authException.getMessage());
+        logger.error("Unauthorized error from JwtAuthEntryPoint : {}", authException.getMessage());
         System.out.println(authException);
 
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

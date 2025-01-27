@@ -58,22 +58,21 @@ public class SecurityConfig {
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 
         //        http.csrf(csrf->csrf.disable());
-        http.csrf(csrf ->csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));
+        http.csrf(csrf ->csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));//http.csrf(): This is configuring the CSRF protection for the HTTP requests. CSRF is a security vulnerability that allows attackers to perform actions on behalf of authenticated users without their consent. By default, Spring Security enables CSRF protection to prevent this. //csrf -> csrf.csrfTokenRepository(): This is chaining a configuration that sets a custom repository for storing and handling the CSRF token. The csrfTokenRepository is responsible for how the CSRF token is stored and transmitted between the client and server.
+        //CookieCsrfTokenRepository is a repository that stores the CSRF token in a cookie.  // withHttpOnlyFalse() configures the cookie to be non-HttpOnly. By default, cookies set with HttpOnly cannot be accessed via JavaScript. This option makes the cookie accessible by JavaScript (for scenarios like using it in an AJAX request).//
+
         http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/auth/public/**")); // you have to disable csrf specially because permitAll() using requestmatcher is only for authentication.
-         http.authorizeHttpRequests((requests) -> requests
+        http.authorizeHttpRequests((requests) -> requests
                  .requestMatchers("/api/admin/**").hasRole("ADMIN")
                  .requestMatchers("/api/public/**").permitAll()  // any request that has public route will not get authenticated like /public/signup  and /public/signin
                  // When you use requestMatchers("/api/public/**").permitAll(), you're explicitly allowing access to the /api/public/** endpoints without any authentication or authorization checks. This includes CSRF protection, meaning CSRF will not be applied to those endpoints by default, because Spring Security treats the request as being "public" and does not require protection for it.
-
-
-
 //                .requestMatchers("/api/private/**").denyAll()
                  .requestMatchers("/api/auth/public/**").permitAll() //permitting to access signin and signup page
                  .requestMatchers("/api/csrf-token").permitAll() // permitting to access csrf-token for every state-changing request
-
                 .anyRequest().authenticated());
-//        http.formLogin(Customizer.withDefaults());
-//        http.httpBasic(Customizer.withDefaults());  //Yes, if you're implementing JWT-based authentication, you typically need to remove or avoid using HTTP Basic Authentication, as they serve different purposes and methods of securing your application. Enabling http.httpBasic() will activate Basic Authentication for all requests, even those protected by your JWT-based security logic.
+
+//      http.formLogin(Customizer.withDefaults());
+//      http.httpBasic(Customizer.withDefaults());  //Yes, if you're implementing JWT-based authentication, you typically need to remove or avoid using HTTP Basic Authentication, as they serve different purposes and methods of securing your application. Enabling http.httpBasic() will activate Basic Authentication for all requests, even those protected by your JWT-based security logic.
 // This can cause unexpected behavior which is Basic Authentication may prompt for credentials in the browser and it might override or bypass JWT validation
 
         http.addFilterBefore(new CustomLoggingFilter(), UsernamePasswordAuthenticationFilter.class);

@@ -34,4 +34,6 @@ public interface UserService {
 	void updateCredentialsExpiryStatus(Long userId, boolean expiryStatus);
 
 	void updatePassword(Long userId, String password);
+
+    User findByEmail(String email);
 }

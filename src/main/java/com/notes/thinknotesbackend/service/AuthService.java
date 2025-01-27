@@ -16,4 +16,8 @@ public interface AuthService {
     ResponseEntity<?> getUserDetails(UserDetails userDetails);
 
     String getUserName(UserDetails userDetails);
+
+    void generatePasswordResetToken(String email);
+
+    void resetPassword(String token, String newPassword);
 }

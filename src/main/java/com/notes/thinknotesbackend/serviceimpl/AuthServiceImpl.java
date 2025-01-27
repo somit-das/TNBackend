@@ -1,5 +1,4 @@
 package com.notes.thinknotesbackend.serviceimpl;
-
 import com.notes.thinknotesbackend.config.security.customuserdetails.UserDetailsImpl;
 import com.notes.thinknotesbackend.config.security.util.JwtUtils;
 import com.notes.thinknotesbackend.config.security.util.request.LoginRequest;
@@ -7,13 +6,17 @@ import com.notes.thinknotesbackend.config.security.util.request.SignUpRequest;
 import com.notes.thinknotesbackend.config.security.util.response.LoginResponse;
 import com.notes.thinknotesbackend.config.security.util.response.MessageResponse;
 import com.notes.thinknotesbackend.config.security.util.response.UserInfoResponse;
+import com.notes.thinknotesbackend.entity.PasswordResetToken;
 import com.notes.thinknotesbackend.entity.Role;
 import com.notes.thinknotesbackend.entity.User;
+import com.notes.thinknotesbackend.repository.PasswordResetTokenRepository;
 import com.notes.thinknotesbackend.repository.RoleRepository;
 import com.notes.thinknotesbackend.service.AuthService;
+import com.notes.thinknotesbackend.service.EmailService;
 import com.notes.thinknotesbackend.service.UserService;
 import com.notes.thinknotesbackend.util.AppRole;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,15 +28,17 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class AuthServiceImpl implements AuthService {
+
+    @Value("${frontend.url}")
+    String frontendUrl;
 
     @Autowired
     JwtUtils jwtUtils;
@@ -49,7 +54,11 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Autowired
+    private EmailService emailService;
 
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Override
     public ResponseEntity<?> authenticateUser(LoginRequest loginRequest) {
@@ -161,5 +170,34 @@ public class AuthServiceImpl implements AuthService {
 
     	return (userDetails != null) ? userDetails.getUsername() : "";
     }
+    @Override
+    public void generatePasswordResetToken(String email) {
+        User user = userService.findByEmail(email);
+        String token = UUID.randomUUID().toString();
+        Instant expiryDate = Instant.now().plus(5, ChronoUnit.MINUTES);
+        PasswordResetToken resetToken = new PasswordResetToken(token,expiryDate,user);
+        passwordResetTokenRepository.save(resetToken);
 
+        String resetUrl= frontendUrl+"/reset-password?token="+token;
+        System.out.println(resetUrl);
+//        Send Email To User
+        emailService.sendPasswordResetEmail(user.getUserName(),user.getEmail(),resetUrl );
+    }
+
+    @Override
+    public void resetPassword(String token, String newPassword) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token).orElseThrow(()-> new RuntimeException("Error: Invalid Password Reset Token!"));
+        if(resetToken.isUsed()){
+            throw new RuntimeException("Password Reset Token has already used!");
+        }
+        if(resetToken.getExpiryDate().isBefore(Instant.now())){
+            throw new RuntimeException("Password Reset Token has expired!");
+        }
+        User user =  resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userService.save(user);
+
+        resetToken.setUsed(true);
+        passwordResetTokenRepository.save(resetToken);
+    }
 }
