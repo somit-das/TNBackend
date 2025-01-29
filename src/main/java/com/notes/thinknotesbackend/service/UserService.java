@@ -5,6 +5,7 @@ import com.notes.thinknotesbackend.entity.Role;
 import com.notes.thinknotesbackend.entity.User;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -35,5 +36,7 @@ public interface UserService {
 
 	void updatePassword(Long userId, String password);
 
-    User findByEmail(String email);
+    Optional<User> findByEmail(String email);
+
+	User oAuth2RegisterUser(User user);
 }

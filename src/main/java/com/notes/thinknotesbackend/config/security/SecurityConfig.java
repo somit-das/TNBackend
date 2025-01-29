@@ -1,9 +1,9 @@
 package com.notes.thinknotesbackend.config.security;
 
 import com.notes.thinknotesbackend.config.filter.CustomLoggingFilter;
-import com.notes.thinknotesbackend.config.filter.RequestValidationFilter;
 import com.notes.thinknotesbackend.config.filter.UserAgentFilter;
-import com.notes.thinknotesbackend.config.security.exceptionhandler.JwtAuthEntryPoint;
+import com.notes.thinknotesbackend.config.security.AuthenticationHandlers.OAuth2LoginSuccessHandler;
+import com.notes.thinknotesbackend.config.security.exceptionhandler.AuthEntryPoint;
 import com.notes.thinknotesbackend.config.security.securityfilter.JwtAuthTokenFilter;
 import com.notes.thinknotesbackend.entity.Role;
 import com.notes.thinknotesbackend.entity.User;
@@ -14,19 +14,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
@@ -41,7 +39,11 @@ public class SecurityConfig {
 
 
     @Autowired
-    public JwtAuthEntryPoint unauthorizedHandler;
+    public AuthEntryPoint unauthorizedHandler;
+
+    @Autowired
+    @Lazy
+    private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
     @Bean
     public JwtAuthTokenFilter jwtAuthTokenFilter() {
@@ -69,7 +71,11 @@ public class SecurityConfig {
 //                .requestMatchers("/api/private/**").denyAll()
                  .requestMatchers("/api/auth/public/**").permitAll() //permitting to access signin and signup page
                  .requestMatchers("/api/csrf-token").permitAll() // permitting to access csrf-token for every state-changing request
-                .anyRequest().authenticated());
+                 .requestMatchers("/oauth2/**").permitAll()
+                 .anyRequest().authenticated())
+                 .oauth2Login(oAuth2Login ->{
+                    oAuth2Login.successHandler(oAuth2LoginSuccessHandler);
+                });
 
 //      http.formLogin(Customizer.withDefaults());
 //      http.httpBasic(Customizer.withDefaults());  //Yes, if you're implementing JWT-based authentication, you typically need to remove or avoid using HTTP Basic Authentication, as they serve different purposes and methods of securing your application. Enabling http.httpBasic() will activate Basic Authentication for all requests, even those protected by your JWT-based security logic.
@@ -101,7 +107,7 @@ public class SecurityConfig {
             Role adminRole = roleRepository.findByRoleName(AppRole.ROLE_ADMIN).orElseGet(()->roleRepository.save(new Role(AppRole.ROLE_ADMIN)));
 //            User Creation
             if(!userRepository.existsByUserName("user1")){
-                User user1 = new User("user1","user1@sample.com",passwordEncoder.encode("user20"));
+                User user1 = new User("user1","TEMP USER","user1@sample.com",passwordEncoder.encode("user20"));
                 user1.setEnabled(true);
                 user1.setAccountNonExpired(true);
                 user1.setCredentialsNonExpired(true);
@@ -115,7 +121,7 @@ public class SecurityConfig {
                 userRepository.save(user1);
             }
             if(!userRepository.existsByUserName("admin")){
-                User admin = new User("admin","admin@sample.com",passwordEncoder.encode("admin22"));
+                User admin = new User("admin","ADMINSTRATOR","admin@sample.com",passwordEncoder.encode("admin22"));
                 admin.setEnabled(true);
                 admin.setAccountNonExpired(true);
                 admin.setCredentialsNonExpired(true);

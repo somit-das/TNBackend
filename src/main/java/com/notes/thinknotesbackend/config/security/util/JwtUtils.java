@@ -40,9 +40,10 @@ public class JwtUtils {
 
     public String generateTokenFromUsername(UserDetailsImpl userDetails) {
         String username = userDetails.getUsername();
-        String roles = userDetails.getAuthorities().stream()
+        String roles = userDetails.getAuthorities().stream() //roles has to be added with token for accessing admin/user page
                 .map(authority -> authority.getAuthority())
                 .collect(Collectors.joining(","));
+        System.out.println(roles);
         return Jwts.builder()
                 .subject(username)
                 .claim("roles", roles)

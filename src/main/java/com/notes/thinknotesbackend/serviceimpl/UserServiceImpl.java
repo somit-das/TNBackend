@@ -16,9 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class UserServiceImpl implements UserService {
-
-   
+public class  UserServiceImpl implements UserService {
 
 //
 //     @Value("${frontend.url}")
@@ -69,6 +67,7 @@ public class UserServiceImpl implements UserService {
         return new UserDTO(
                 user.getUserId(),
                 user.getUserName(),
+                user.getFullName(),
                 user.getEmail(),
                 user.isAccountNonLocked(),
                 user.isAccountNonExpired(),
@@ -153,8 +152,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email).orElseThrow(()->new RuntimeException("User not found"));
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
+
+    @Override
+    public User oAuth2RegisterUser(User user) {
+        if(user.getPassword()!=null)
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        return userRepository.save(user) ;
+    }
+
 
 }

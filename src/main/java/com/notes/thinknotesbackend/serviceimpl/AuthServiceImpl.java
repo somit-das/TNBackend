@@ -172,7 +172,7 @@ public class AuthServiceImpl implements AuthService {
     }
     @Override
     public void generatePasswordResetToken(String email) {
-        User user = userService.findByEmail(email);
+        User user = userService.findByEmail(email).orElseThrow(() -> new RuntimeException("Error: User not found!"));
         String token = UUID.randomUUID().toString();
         Instant expiryDate = Instant.now().plus(5, ChronoUnit.MINUTES);
         PasswordResetToken resetToken = new PasswordResetToken(token,expiryDate,user);

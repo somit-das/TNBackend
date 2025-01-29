@@ -46,6 +46,7 @@ public class User{
     @JsonIgnore
     private String password;
 
+    private String fullName;
     private boolean accountNonLocked = true;
     private boolean accountNonExpired = true;
     private boolean credentialsNonExpired = true;
@@ -77,6 +78,13 @@ public class User{
         this.email = email;
         this.password = password;
     }
+    public User(String userName, String fullName, String email,String password) {
+        this.userName = userName;
+        this.fullName = fullName;
+        this.email = email;
+        this.password = password;
+    }
+
 
     public User(String userName, String email) {
         this.userName = userName;
