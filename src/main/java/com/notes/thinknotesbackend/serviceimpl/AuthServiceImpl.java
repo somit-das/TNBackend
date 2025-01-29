@@ -6,6 +6,7 @@ import com.notes.thinknotesbackend.config.security.util.request.SignUpRequest;
 import com.notes.thinknotesbackend.config.security.util.response.LoginResponse;
 import com.notes.thinknotesbackend.config.security.util.response.MessageResponse;
 import com.notes.thinknotesbackend.config.security.util.response.UserInfoResponse;
+import com.notes.thinknotesbackend.dto.UserDTO;
 import com.notes.thinknotesbackend.entity.PasswordResetToken;
 import com.notes.thinknotesbackend.entity.Role;
 import com.notes.thinknotesbackend.entity.User;
@@ -13,8 +14,10 @@ import com.notes.thinknotesbackend.repository.PasswordResetTokenRepository;
 import com.notes.thinknotesbackend.repository.RoleRepository;
 import com.notes.thinknotesbackend.service.AuthService;
 import com.notes.thinknotesbackend.service.EmailService;
+import com.notes.thinknotesbackend.service.TotpService;
 import com.notes.thinknotesbackend.service.UserService;
 import com.notes.thinknotesbackend.util.AppRole;
+import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -59,6 +62,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Autowired
+    private TotpService totpService;
 
     @Override
     public ResponseEntity<?> authenticateUser(LoginRequest loginRequest) {
@@ -200,4 +205,123 @@ public class AuthServiceImpl implements AuthService {
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
     }
+
+    //2FA AUTHENTICATION
+    public Long loggedInUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user =  userService.findByUsername(authentication.getName());
+        return user.getUserId();
+    }
+
+    public User loggedInUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user =  userService.findByUsername(authentication.getName());
+        return user;
+    }
+
+    @Override
+    public ResponseEntity<?> enable2FA() {
+        Long userId = loggedInUserId();
+        GoogleAuthenticatorKey secret = userService.generate2FASecret(userId);
+        String qrCodeUrl = totpService.getQrCodeUrl(secret,userService.getUserById(userId).getUserName());
+        return ResponseEntity.ok(qrCodeUrl);
+    }
+
+    @Override
+    public ResponseEntity<?> disable2FA() {
+        Long userId = loggedInUserId();
+        userService.disable2FA(userId);
+        return ResponseEntity.ok("2FA Disabled");
+    }
+
+    @Override
+    public ResponseEntity<?> verify2FA(int code) {
+        Long userId = loggedInUserId();
+        boolean isValid = userService.validate2FASecret(userId,code);
+        if(isValid){
+            userService.enable2FA(userId);
+            return ResponseEntity.ok("2FA Verified");
+        }else{
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("2FA Not Verified");
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> get2FAStatus() {
+        UserDTO userDto = userService.getUserById(loggedInUserId());
+//        boolean isValid = userService.validate2FASecret(userId,code);
+        if(userDto != null){
+            return ResponseEntity.ok().body( Map.of("is2FAEnabled",userDto.isTwoFactorEnabled()));
+        }else{
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> verify2FALogin(int code, String jwtToken) {
+        String username = jwtUtils.getUserNameFromJwtToken(jwtToken);
+        User user = userService.findByUsername(username);
+        boolean isValid = userService.validate2FASecret(user.getUserId(),code);
+        if(isValid){
+            return ResponseEntity.ok("2FA Verified");
+        }else{
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("2FA Not Verified");
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> updateCredentials(String jwtToken, String newUsername, String newPassword) {
+
+        String username = jwtUtils.getUserNameFromJwtToken(jwtToken);
+        User user = userService.findByUsername(username);
+        System.out.println("New Password :" + newPassword);
+        if (newPassword != null && !newPassword.equals(" ") && !newPassword.isBlank()&& !newPassword.isEmpty()) {
+            user.setPassword(passwordEncoder.encode(newPassword));
+        }
+        if(newUsername != null){
+            user.setUserName(newUsername);
+        }
+        userService.save(user);
+
+        return ResponseEntity.ok().body("Successfully updated credentials");
+    }
+
+    @Override
+    public ResponseEntity<?> updateExpiryStatus(String jwtToken, Boolean expiryStatus) {
+
+        String username = jwtUtils.getUserNameFromJwtToken(jwtToken);
+        User user = userService.findByUsername(username);
+        user.setAccountNonExpired(expiryStatus);
+        userService.save(user);
+        return ResponseEntity.ok().body("Successfully updated credentials");
+    }
+
+    @Override
+    public ResponseEntity<?> updateLockStatus(String jwtToken, Boolean lockStatus) {
+        String username = jwtUtils.getUserNameFromJwtToken(jwtToken);
+        User user = userService.findByUsername(username);
+        user.setAccountNonLocked(lockStatus);
+        userService.save(user);
+        return ResponseEntity.ok().body("Successfully updated credentials");
+    }
+
+    @Override
+    public ResponseEntity<?> updateEnabledStatus(String jwtToken, Boolean enabledStatus) {
+        String username = jwtUtils.getUserNameFromJwtToken(jwtToken);
+        User user = userService.findByUsername(username);
+        user.setAccountNonLocked(enabledStatus);
+        userService.save(user);
+        return ResponseEntity.ok().body("Successfully updated credentials");
+    }
+
+    @Override
+    public ResponseEntity<?> updateCredentialsExpiryStatus(String jwtToken, Boolean expiryStatus) {
+        String username = jwtUtils.getUserNameFromJwtToken(jwtToken);
+        User user = userService.findByUsername(username);
+        user.setCredentialsNonExpired(expiryStatus);
+        userService.save(user);
+        return ResponseEntity.ok().body("Successfully updated credentials");
+    }
+
+
 }

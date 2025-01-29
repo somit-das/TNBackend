@@ -5,34 +5,33 @@ import com.notes.thinknotesbackend.entity.Role;
 import com.notes.thinknotesbackend.entity.User;
 import com.notes.thinknotesbackend.repository.RoleRepository;
 import com.notes.thinknotesbackend.repository.UserRepository;
+import com.notes.thinknotesbackend.service.TotpService;
 import com.notes.thinknotesbackend.service.UserService;
 import com.notes.thinknotesbackend.util.AppRole;
+import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class  UserServiceImpl implements UserService {
 
-//
-//     @Value("${frontend.url}")
-//    String frontendUrl;
-
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
-    UserRepository userRepository;
+    private RoleRepository roleRepository;
 
     @Autowired
-    RoleRepository roleRepository;
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
-    PasswordEncoder passwordEncoder;
-
-
+    private TotpService totpService;
 
     @Override
     public User save(User user) {
@@ -158,11 +157,46 @@ public class  UserServiceImpl implements UserService {
 
     @Override
     public User oAuth2RegisterUser(User user) {
-        if(user.getPassword()!=null)
+        if(user.getPassword()!=null) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
 
+        }
+        user.setAccountNonLocked(true);
+        user.setAccountNonExpired(true);
+        user.setCredentialsNonExpired(true);
+        user.setEnabled(true);
+        user.setCredentialsExpiryDate(LocalDate.now().plusYears(1));
+        user.setAccountExpiryDate(LocalDate.now().plusYears(1));
+        user.setTwoFactorEnabled(false);
         return userRepository.save(user) ;
     }
 
+    @Override
+    public GoogleAuthenticatorKey generate2FASecret(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(()->new RuntimeException("User not found"));
+        GoogleAuthenticatorKey key = totpService.generateSecretKey();
+        user.setTwoFactorSecret(key.getKey());
+        userRepository.save(user);
+        return key;
+    }
 
+    @Override
+    public boolean validate2FASecret(Long userId, int code) {
+        User user = userRepository.findById(userId).orElseThrow(()->new RuntimeException("User not found"));
+        return totpService.verifyQrCode(user.getTwoFactorSecret(), code);
+    }
+
+    @Override
+    public void enable2FA(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(()->new RuntimeException("User not found"));
+        user.setTwoFactorEnabled(true);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void disable2FA(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(()->new RuntimeException("User not found"));
+        user.setTwoFactorEnabled(false);
+        userRepository.save(user);
+    }
 }
